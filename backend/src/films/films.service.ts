@@ -1,52 +1,49 @@
-import { Injectable } from '@nestjs/common';
-import { Model } from 'mongoose';
-import { InjectModel } from '@nestjs/mongoose';
-import { Film, FilmDocument } from './schemas/film.schema';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateFilmDto } from './dto/films.dto';
+import { Film } from '@/entity/film';
+import { AppRepository } from '@/repository/app.repository';
 
 @Injectable()
 export class FilmsService {
-  constructor(
-    @InjectModel(Film.name) private readonly filmModel: Model<FilmDocument>,
-  ) {}
+  constructor(private readonly repo: AppRepository) {}
 
   async create(dto: CreateFilmDto) {
-    return this.filmModel.create(dto);
+    return this.repo.create(dto);
   }
 
   async findAll(): Promise<Film[]> {
-    return this.filmModel.find().exec();
+    return this.repo.findAll();
   }
 
-  async findById(id: string): Promise<FilmDocument | null> {
-    return this.filmModel.findOne({ id: id }).exec();
+  async findById(id: string): Promise<Film | null> {
+    const film = await this.repo.findOne(id);
+    if (!film) {
+    }
+    return film;
   }
 
-  async save(film: FilmDocument): Promise<FilmDocument> {
-    console.log('Попытка сохранить фильм с _id:', film._id);
+  async save(film: Film): Promise<Film> {
+    console.log('Попытка сохранить фильм с id:', film.id);
 
-    const result = await this.filmModel
-      .findOneAndUpdate(
-        { _id: film._id },
-        {
-          $set: {
-            schedule: film.schedule,
-          },
-        },
-        {
-          new: true,
-          upsert: false,
-        },
-      )
-      .exec();
+    const existingFilm = await this.repo.findOne(film.id);
 
-    console.log('Результат сохранения:', result ? 'OK' : 'NOT FOUND');
-    return result;
+    if (!existingFilm) {
+      throw new NotFoundException(
+        `Фильм с ID ${film.id} не найден для обновления`,
+      );
+    }
+
+    Object.assign(existingFilm, {
+      schedule: film.schedule,
+    });
+
+    return this.repo.update(film.id, existingFilm);
   }
 
   async findSchedule(id: string) {
     const film = await this.findById(id);
     if (!film) return null;
+
     return { schedule: film.schedule };
   }
 }
