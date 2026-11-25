@@ -9,16 +9,16 @@ import {
 import { FilmsService } from './films.service';
 import { CreateFilmDto } from './dto/films.dto';
 
-@Controller('api/afisha')
+@Controller('films')
 export class FilmsController {
   constructor(private readonly filmsService: FilmsService) {}
 
-  @Get('films')
+  @Get()
   async findAll() {
     return this.filmsService.findAll();
   }
 
-  @Get('films/:id/schedule')
+  @Get(':id/schedule')
   async getSchedule(@Param('id') id: string) {
     const result = await this.filmsService.findSchedule(id);
 
@@ -29,7 +29,7 @@ export class FilmsController {
     return result;
   }
 
-  @Post('films')
+  @Post('')
   async create(@Body() dto: CreateFilmDto) {
     return this.filmsService.create(dto);
   }
